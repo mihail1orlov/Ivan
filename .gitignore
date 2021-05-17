@@ -1,6 +1,6 @@
 ##### Windows
 # Windows thumbnail cache files
-output.txt
+session.dat
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
@@ -616,6 +616,7 @@ nunit-*.xml
 [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c
+enc_temp_folder/
 
 # Benchmark Results
 BenchmarkDotNet.Artifacts/

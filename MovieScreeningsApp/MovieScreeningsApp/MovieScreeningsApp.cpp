@@ -28,8 +28,8 @@ namespace Json {
             return data.subObject[std::move(name)];
         }
 
-        const Value& operator[](std::string name) const {
-            auto it = data.subObject.find(std::move(name));
+        const Value& operator[](const std::string& name) const {
+	        const auto it = data.subObject.find(name);
 
             if (it != data.subObject.end()) {
                 return it->second;
@@ -132,37 +132,67 @@ Json::Value toJson(const T& object) {
     return data;
 }
 
-namespace animal {
+namespace model {
 
-    struct Dog {
-        std::string barkType;
-        std::string color;
-        int weight = 0;
-
-        bool operator==(const Dog& rhs) const {
-            return barkType == rhs.barkType && color == rhs.color && weight == rhs.weight;
+    struct session {
+	    std::string name;
+	    std::string time;
+        std::string duration;
+        std::string directedBy;
+        int cost = 0;
+        int count = 0;
+    	
+        bool operator==(const session& session) const {
+            return name == session.name
+                && time == session.time
+        	   	&& duration == session.duration
+        		&& directedBy == session.directedBy
+        		&& cost == session.cost
+        		&& count == session.count;
         }
 
         constexpr static auto properties = std::make_tuple(
-            property(&Dog::barkType, "barkType"),
-            property(&Dog::color, "color"),
-            property(&Dog::weight, "weight")
+            property(&session::name, "name"),
+            property(&session::time, "time"),
+            property(&session::duration, "duration"),
+            property(&session::directedBy, "directedBy"),
+            property(&session::cost, "cost"),
+            property(&session::count, "count")
         );
     };
 
 }
 
 int main() {
-    animal::Dog dog;
 
-    dog.color = "green";
-    dog.barkType = "whaf";
-    dog.weight = 30;
+    model::session session;
 
-    Json::Value jsonDog = toJson(dog); // produces {"color":"green", "barkType":"whaf", "weight": 30}
-    auto dog2 = fromJson<animal::Dog>(jsonDog);
+    // Access attributes and set values
+    session.name = "Pulp Fiction";
+    session.time = "Some text";
+    session.duration = "154";
+    session.directedBy = "Quentin Tarantino";
+    session.cost = 10;
+    session.count = 50;
 
-    std::cout << std::boolalpha << (dog == dog2) << std::endl; // pass the test, both dog are equal!
+    Json::Value json = toJson(session); // produces json
+
+    FILE* file;
+    fopen_s(&file, "session.dat", "w+");
+    if (file == nullptr)
+    {
+        return 1;
+    }
+
+    fprintf_s(file, "%s", json.data.subObject);
+    //fscanf_s(file, "%s", j);
+	fclose(file);
+
+
+	
+    auto session2 = fromJson<model::session>(json);
+
+    std::cout << std::boolalpha << (session == session2) << std::endl; // pass the test, both object are equal!
 
     return 0;
 }
