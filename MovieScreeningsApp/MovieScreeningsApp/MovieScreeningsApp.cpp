@@ -1,198 +1,96 @@
-#include <tuple>
-#include <map>
+// JsonSerializationApp.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
+
 #include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
 
-// sequence for
-template <typename T, T... S, typename F>
-constexpr void for_sequence(std::integer_sequence<T, S...>, F&& f) {
-    using unpack_t = int[];
-    (void)unpack_t {
-        (static_cast<void>(f(std::integral_constant<T, S>{})), 0)..., 0
-    };
-}
-
-// Sample implementation of a json-like data structure. It is only there for the example to compile and actually produce a testable output
-namespace Json {
-    struct Value;
-
-    struct ValueData {
-        std::map<std::string, Value> subObject;
-        std::string string;
-        int number = 0;
-    };
-
-    struct Value {
-        ValueData data;
-
-        Value& operator[](std::string name) {
-            return data.subObject[std::move(name)];
-        }
-
-        const Value& operator[](const std::string& name) const {
-	        const auto it = data.subObject.find(name);
-
-            if (it != data.subObject.end()) {
-                return it->second;
-            }
-
-            throw;
-        }
-
-        Value& operator=(std::string value) {
-            data.string = value;
-            return *this;
-        }
-
-        Value& operator=(double value) {
-            data.number = value;
-            return *this;
-        }
-    };
-
-    template<typename T> T& asAny(Value&);
-    template<typename T> const T& asAny(const Value&);
-
-    template<>
-    int& asAny<int>(Value& value) {
-        return value.data.number;
-    }
-
-    template<>
-    const int& asAny<int>(const Value& value) {
-        return value.data.number;
-    }
-
-    template<>
-    const std::string& asAny<std::string>(const Value& value) {
-        return value.data.string;
-    }
-
-    template<>
-    std::string& asAny<std::string>(Value& value) {
-        return value.data.string;
-    }
-}
-
-template<typename Class, typename T>
-struct PropertyImpl {
-    constexpr PropertyImpl(T Class::* aMember, const char* aName) : member{ aMember }, name{ aName } {}
-
-    using Type = T;
-
-    T Class::* member;
-    const char* name;
-};
-
-// One could overload this function to accept both a getter and a setter instead of a member.
-template<typename Class, typename T>
-constexpr auto property(T Class::* member, const char* name) {
-    return PropertyImpl<Class, T>{member, name};
-}
-
-
-// unserialize function
-template<typename T>
-T fromJson(const Json::Value& data) {
-    T object;
-
-    // We first get the number of properties
-    constexpr auto nbProperties = std::tuple_size<decltype(T::properties)>::value;
-
-    // We iterate on the index sequence of size `nbProperties`
-    for_sequence(std::make_index_sequence<nbProperties>{}, [&](auto i) {
-        // get the property
-        constexpr auto property = std::get<i>(T::properties);
-
-        // get the type of the property
-        using Type = typename decltype(property)::Type;
-
-        // set the value to the member
-        object.*(property.member) = Json::asAny<Type>(data[property.name]);
-        });
-
-    return object;
-}
-
-template<typename T>
-Json::Value toJson(const T& object) {
-    Json::Value data;
-
-    // We first get the number of properties
-    constexpr auto nbProperties = std::tuple_size<decltype(T::properties)>::value;
-
-    // We iterate on the index sequence of size `nbProperties`
-    for_sequence(std::make_index_sequence<nbProperties>{}, [&](auto i) {
-        // get the property
-        constexpr auto property = std::get<i>(T::properties);
-
-        // set the value to the member
-        data[property.name] = object.*(property.member);
-        });
-
-    return data;
-}
 
 namespace model {
 
     struct session {
-	    std::string name;
-	    std::string time;
+        std::string name;
+        std::string time;
         std::string duration;
         std::string directedBy;
         int cost = 0;
         int count = 0;
-    	
+
         bool operator==(const session& session) const {
             return name == session.name
                 && time == session.time
-        	   	&& duration == session.duration
-        		&& directedBy == session.directedBy
-        		&& cost == session.cost
-        		&& count == session.count;
+                && duration == session.duration
+                && directedBy == session.directedBy
+                && cost == session.cost
+                && count == session.count;
         }
 
-        constexpr static auto properties = std::make_tuple(
-            property(&session::name, "name"),
-            property(&session::time, "time"),
-            property(&session::duration, "duration"),
-            property(&session::directedBy, "directedBy"),
-            property(&session::cost, "cost"),
-            property(&session::count, "count")
-        );
+        string to_string() const
+        {
+            return name + "," + time + "," + duration + "," + directedBy + "," + std::to_string(cost) + "," + std::to_string(count);
+        }
+
+        void init(const char* name, const char* time, const char* duration, const char* directedBy, int cost, int count)
+        {
+            this->name = name;
+            this->time = time;
+            this->duration = duration;
+            this->directedBy = directedBy;
+            this->cost = cost;
+            this->count = count;
+        }
     };
 
 }
 
-int main() {
 
+
+int main()
+{
     model::session session;
 
-    // Access attributes and set values
-    session.name = "Pulp Fiction";
-    session.time = "Some text";
-    session.duration = "154";
-    session.directedBy = "Quentin Tarantino";
-    session.cost = 10;
-    session.count = 50;
+    session.init("Pulp Fiction", "Some text", "154", "Quentin Tarantino", 10, 50);
 
-    Json::Value json = toJson(session); // produces json
+    cout << session.to_string() << '\n';
 
-    FILE* file;
-    fopen_s(&file, "session.dat", "w+");
-    if (file == nullptr)
-    {
-        return 1;
-    }
-
-    fprintf_s(file, "%s", json.data.subObject);
-    //fscanf_s(file, "%s", j);
-	fclose(file);
 
 
 	
-    auto session2 = fromJson<model::session>(json);
+    std::cout << "Hello World!\n";
+    std::ofstream file;
+    file.open("example.txt");
+    file << "Writing this to a file.0000\n";
+    file << "Writing this to a file.1111\n";
+    file << "Writing this to a file.2222\n";
+    file << "Writing this to a file.3333\n";
+    file << "Writing this to a file.4444\n";
+    file.close();
 
-    std::cout << std::boolalpha << (session == session2) << std::endl; // pass the test, both object are equal!
+    string line;
+    ifstream myfile("example.txt");
+    if (myfile.is_open())
+    {
+        while (getline(myfile, line))
+        {
+            cout << line << '\n';
+        }
+        myfile.close();
+    }
+    else {
+        cout << "Unable to open file";
+    }
 
-    return 0;
+    file.close();
 }
+
+// Run program: Ctrl + "," + F5 or Debug > Start Without Debugging menu
+// Debug program: F5 or Debug > Start Debugging menu
+
+// Tips for Getting Started: 
+//   1. Use the Solution Explorer window to add/manage files
+//   2. Use the Team Explorer window to connect to source control
+//   3. Use the Output window to see build output and other messages
+//   4. Use the Error List window to view errors
+//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
+//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
