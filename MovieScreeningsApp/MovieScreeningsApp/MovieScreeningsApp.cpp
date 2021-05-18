@@ -4,9 +4,42 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <utility>
+#include <vector>
+
 using namespace std;
 
+
+namespace services
+{
+    struct file {
+	    vector<string> read(const string file_name)
+        {
+            vector<string> v;
+            ifstream stream(file_name);
+            if (stream.is_open())
+            {
+	            string line;
+	            while (getline(stream, line))
+                {
+                    v.push_back(line);
+                }
+                stream.close();
+            }
+            return v;
+        }
+
+	    void write(const string file_name, const vector<string> vector)
+	    {
+            std::ofstream file;
+            file.open(file_name);
+            for (size_t i = 0; i < vector.size(); i++)
+            {
+                file << vector[i] << '\n';
+            }
+            file.close();
+	    }
+    };
+}
 
 namespace model {
 
@@ -54,7 +87,6 @@ namespace model {
                     start = end + 1;
                     j++;
                 }
-                std::cout << str[i];
             }
 
             init(items[0], items[1], items[2], items[3], std::stoi(items[4]), std::stoi(items[5]));
@@ -63,38 +95,36 @@ namespace model {
 
 }
 
-
-
 int main()
 {
-    std::cout << "Hello World!\n";
+    std::cout << "Cinema app\n";
 
-	string str = "Pulp Fiction,Some text,154,Quentin Tarantino,10,50";
+    std::cout << "Read file\n";
+    auto filename = "session.dat";
+    services::file file;
+    auto items = file.read(filename);
 
-	model::session session;
-    //session.init("Pulp Fiction", "Some text", "154", "Quentin Tarantino", 10, 50);
-    session.init("Pulp Fiction,Some text,154,Quentin Tarantino,10,50");
-
-    std::ofstream file;
-    file.open("example.txt");
-    file << session.to_string();
-    file.close();
-
-    string line;
-    ifstream stream("example.txt");
-    if (stream.is_open())
+    std::vector<model::session> sessionses;
+    for (size_t i = 0; i < items.size(); i++)
     {
-        while (getline(stream, line))
-        {
-            cout << line << '\n';
-        }
-        stream.close();
-    }
-    else {
-        cout << "Unable to open file";
+	    model::session session;
+        session.init(items[i]);
+        sessionses.push_back(session);
     }
 
-    file.close();
+    std::vector<string> lines;
+    for (size_t i = 0; i < sessionses.size(); i++)
+    {
+        lines.push_back(sessionses[i].to_string());
+    }
+
+    std::cout << "Write file\n";
+	for (size_t i = 0; i < lines.size(); i++)
+    {
+        std::cout << lines[i] << '\n';
+    }
+
+    file.write("sessionOut.dat", lines);
 }
 
 // Run program: Ctrl + "," + F5 or Debug > Start Without Debugging menu
