@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <utility>
 using namespace std;
 
 
@@ -31,7 +32,7 @@ namespace model {
             return name + "," + time + "," + duration + "," + directedBy + "," + std::to_string(cost) + "," + std::to_string(count);
         }
 
-        void init(const char* name, const char* time, const char* duration, const char* directedBy, int cost, int count)
+        void init(const string& name, const string& time, const string& duration, const string& directedBy, int cost, int count)
         {
             this->name = name;
             this->time = time;
@@ -39,6 +40,24 @@ namespace model {
             this->directedBy = directedBy;
             this->cost = cost;
             this->count = count;
+        }
+
+        void init(string str)
+        {
+            string items[6];
+            for (size_t i = 0, j = 0, start = 0, end = 0; i < str.length(); i++)
+            {
+                if (i + 1 == str.length() || str[i + 1] == ',')
+                {
+                    end = i + 1;
+                    items[j] = str.substr(start, end - start);
+                    start = end + 1;
+                    j++;
+                }
+                std::cout << str[i];
+            }
+
+            init(items[0], items[1], items[2], items[3], std::stoi(items[4]), std::stoi(items[5]));
         }
     };
 
@@ -48,34 +67,28 @@ namespace model {
 
 int main()
 {
-    model::session session;
-
-    session.init("Pulp Fiction", "Some text", "154", "Quentin Tarantino", 10, 50);
-
-    cout << session.to_string() << '\n';
-
-
-
-	
     std::cout << "Hello World!\n";
+
+	string str = "Pulp Fiction,Some text,154,Quentin Tarantino,10,50";
+
+	model::session session;
+    //session.init("Pulp Fiction", "Some text", "154", "Quentin Tarantino", 10, 50);
+    session.init("Pulp Fiction,Some text,154,Quentin Tarantino,10,50");
+
     std::ofstream file;
     file.open("example.txt");
-    file << "Writing this to a file.0000\n";
-    file << "Writing this to a file.1111\n";
-    file << "Writing this to a file.2222\n";
-    file << "Writing this to a file.3333\n";
-    file << "Writing this to a file.4444\n";
+    file << session.to_string();
     file.close();
 
     string line;
-    ifstream myfile("example.txt");
-    if (myfile.is_open())
+    ifstream stream("example.txt");
+    if (stream.is_open())
     {
-        while (getline(myfile, line))
+        while (getline(stream, line))
         {
             cout << line << '\n';
         }
-        myfile.close();
+        stream.close();
     }
     else {
         cout << "Unable to open file";
